@@ -1,5 +1,6 @@
 import { Scene3D } from "@/components/Scene3D";
 import { Stars } from "@/components/Stars";
+import { ModelUploadInstructions } from "@/components/ModelUploadInstructions";
 
 const Index = () => {
   return (
@@ -20,6 +21,9 @@ const Index = () => {
           </h1>
         </div>
       </div>
+
+      {/* Instrucciones de cómo cargar modelo */}
+      <ModelUploadInstructions />
 
       {/* Instrucciones de uso (esquina inferior) */}
       <div className="fixed bottom-5 right-5 z-50 pointer-events-none">
