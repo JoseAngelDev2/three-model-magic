@@ -136,5 +136,5 @@ export const Scene3D = () => {
       </Canvas>
     </div>
   );
-};
+}
 
