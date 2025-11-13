@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
     /* Space-themed dark design */
@@ -41,7 +37,7 @@ All colors MUST be HSL.
 
     /* Space gradients */
     --space-gradient: radial-gradient(ellipse at bottom, hsl(217, 35%, 15%), hsl(217, 35%, 5%));
-    
+
     /* Glow effects */
     --glow-primary: 0 0 20px hsl(210 100% 65% / 0.5);
     --glow-accent: 0 0 15px hsl(195 100% 60% / 0.4);
@@ -53,9 +49,14 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html, body {
+    @apply w-full h-full m-0 p-0;
+  }
+
   body {
     @apply bg-background text-foreground;
     background: radial-gradient(ellipse at bottom, hsl(217, 35%, 15%), hsl(217, 35%, 5%));
+    overflow-x: hidden;
   }
 }
 
@@ -65,10 +66,51 @@ All colors MUST be HSL.
     background: white;
     border-radius: 50%;
     animation: twinkle linear infinite;
+
+    /* Tamaño responsivo */
+    width: 2px;
+    height: 2px;
+
+    @screen sm {
+      width: 1.5px;
+      height: 1.5px;
+    }
+
+    @screen md {
+      width: 2px;
+      height: 2px;
+    }
+
+    @screen lg {
+      width: 2.5px;
+      height: 2.5px;
+    }
+
+    @screen xl {
+      width: 3px;
+      height: 3px;
+    }
   }
 
   @keyframes twinkle {
     0%, 100% { opacity: 0.3; }
     50% { opacity: 1; }
+  }
+
+  /* Gradiente responsivo */
+  .bg-space {
+    background: radial-gradient(ellipse at bottom, hsl(217, 35%, 15%), hsl(217, 35%, 5%));
+
+    @screen sm {
+      background: radial-gradient(ellipse at bottom, hsl(217, 35%, 18%), hsl(217, 35%, 8%));
+    }
+
+    @screen md {
+      background: radial-gradient(ellipse at bottom, hsl(217, 35%, 15%), hsl(217, 35%, 5%));
+    }
+
+    @screen lg {
+      background: radial-gradient(ellipse at bottom, hsl(217, 35%, 12%), hsl(217, 35%, 5%));
+    }
   }
 }
