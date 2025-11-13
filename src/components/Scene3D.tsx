@@ -1,20 +1,18 @@
 import { useRef, useState, useEffect, Suspense } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { toast } from "sonner";
 
 interface ModelProps {
   targetScale: number;
   onScaleChange: (scale: number) => void;
 }
 
-// 🌙 Placeholder temporal - Esfera simple mientras cargas tu modelo
 function PlaceholderSphere({ targetScale, onScaleChange }: ModelProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const [currentScale, setCurrentScale] = useState(0.01);
-  
+
   useFrame(() => {
     if (meshRef.current) {
       setCurrentScale((prev) => {
@@ -23,66 +21,56 @@ function PlaceholderSphere({ targetScale, onScaleChange }: ModelProps) {
         meshRef.current!.scale.set(newScale, newScale, newScale);
         return newScale;
       });
-      meshRef.current.rotation.y += 0.001;
+      meshRef.current.rotation.y += 0.002;
     }
   });
 
   return (
     <mesh ref={meshRef}>
       <sphereGeometry args={[1, 64, 64]} />
-      <meshStandardMaterial 
-        color="#888888"
-        roughness={0.7} 
-        metalness={0.3}
-      />
+      <meshStandardMaterial color="#888888" roughness={0.7} metalness={0.3} />
     </mesh>
   );
 }
 
-// 🎯 Componente que intenta cargar tu modelo 3D
 function CustomModel({ targetScale, onScaleChange, modelPath }: ModelProps & { modelPath: string }) {
   const meshRef = useRef<THREE.Group>(null);
+  const { camera } = useThree();
   const [currentScale, setCurrentScale] = useState(0.01);
   const [model, setModel] = useState<any>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    // Intentar cargar el modelo usando GLTFLoader directamente
     const loader = new GLTFLoader();
-    
+
     loader.load(
       modelPath,
       (gltf) => {
-        // ✅ Modelo cargado exitosamente
         setModel(gltf);
         setError(false);
-        
-        // Centra el modelo
+
         const box = new THREE.Box3().setFromObject(gltf.scene);
         const center = box.getCenter(new THREE.Vector3());
         gltf.scene.position.sub(center);
-        
-        // Asegura iluminación
+
         gltf.scene.traverse((child) => {
           if ((child as THREE.Mesh).isMesh) {
             const mesh = child as THREE.Mesh;
-            if (mesh.material) {
-              (mesh.material as any).needsUpdate = true;
-            }
+            const mat = mesh.material as THREE.Material;
+            if ("opacity" in mat && (mat as any).opacity === 0) (mat as any).opacity = 1;
+            if ("transparent" in mat) (mat as any).transparent = false;
+            mat.needsUpdate = true;
           }
         });
-        
-        toast.success("¡Modelo 3D cargado correctamente!");
+
+        const size = box.getSize(new THREE.Vector3()).length();
+        camera.position.copy(center.clone().add(new THREE.Vector3(0, 0, size * 1.5)));
+        camera.lookAt(center);
       },
       undefined,
-      (error) => {
-        // ❌ Error al cargar
-        console.error("Error cargando modelo:", error);
-        setError(true);
-        toast.error("No se pudo cargar el modelo. Usando placeholder.");
-      }
+      () => setError(true)
     );
-  }, [modelPath]);
+  }, [modelPath, camera]);
 
   useFrame(() => {
     if (meshRef.current) {
@@ -92,14 +80,11 @@ function CustomModel({ targetScale, onScaleChange, modelPath }: ModelProps & { m
         meshRef.current!.scale.set(newScale, newScale, newScale);
         return newScale;
       });
-      meshRef.current.rotation.y += 0.001;
+      meshRef.current.rotation.y += 0.002;
     }
   });
 
-  // Si hay error o no hay modelo, retornar null para usar el placeholder
-  if (error || !model) {
-    return null;
-  }
+  if (error || !model) return null;
 
   return (
     <group ref={meshRef}>
@@ -111,62 +96,45 @@ function CustomModel({ targetScale, onScaleChange, modelPath }: ModelProps & { m
 export const Scene3D = () => {
   const [targetScale, setTargetScale] = useState(0.01);
   const [currentScale, setCurrentScale] = useState(0.01);
-  const [useCustomModel, setUseCustomModel] = useState(true);
   const controlsRef = useRef<any>(null);
 
-  // 🔥 CAMBIA AQUÍ la ruta a tu modelo:
-  const MODEL_PATH = '/models/mi_modelo.glb';
+  const MODEL_PATH = "/models/Modelo 3D MOON.glb";
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.tagName === 'CANVAS' || target.classList.contains('star') || target.id === 'canvas-container') {
+      if (target.tagName === "CANVAS" || target.id === "canvas-container") {
         setTargetScale(2.5);
       }
     };
 
-    window.addEventListener('click', handleClick);
-    
-    // Mostrar instrucciones al cargar
-    toast.info("📦 Coloca tu modelo .glb en public/models/mi_modelo.glb", {
-      duration: 5000,
-    });
-
-    return () => window.removeEventListener('click', handleClick);
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
   }, []);
 
   return (
     <div className="fixed inset-0 w-full h-full" id="canvas-container">
       <Canvas>
         <PerspectiveCamera makeDefault position={[0, 0, 5]} />
-        
-        {/* Iluminación */}
-        <ambientLight intensity={0.5} color="#404040" />
-        <directionalLight position={[5, 3, 5]} intensity={1} color="#ffffff" />
-        
-        {/* Intenta cargar el modelo personalizado, si falla usa el placeholder */}
+        <ambientLight intensity={0.6} color="#ffffff" />
+        <directionalLight position={[5, 3, 5]} intensity={1.2} color="#ffffff" />
+
         <Suspense fallback={<PlaceholderSphere targetScale={targetScale} onScaleChange={setCurrentScale} />}>
-          <CustomModel 
-            modelPath={MODEL_PATH} 
-            targetScale={targetScale} 
-            onScaleChange={setCurrentScale} 
-          />
-          {/* Placeholder como fallback */}
-          <PlaceholderSphere targetScale={targetScale} onScaleChange={setCurrentScale} />
+          <CustomModel modelPath={MODEL_PATH} targetScale={targetScale} onScaleChange={setCurrentScale} />
         </Suspense>
-        
-        {/* Controles de órbita */}
+
         <OrbitControls
           ref={controlsRef}
           enablePan={false}
           enableZoom={true}
           enableRotate={true}
-          zoomSpeed={0.5}
+          zoomSpeed={0.6}
           rotateSpeed={0.5}
           minDistance={1}
-          maxDistance={15}
+          maxDistance={30}
         />
       </Canvas>
     </div>
   );
 };
+
