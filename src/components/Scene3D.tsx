@@ -1,75 +1,26 @@
 import { useRef, useState, useEffect } from "react";
-import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls, PerspectiveCamera, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-
-// Crear textura lunar procedural (igual que tu código original)
-function createMoonTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
-  const ctx = canvas.getContext('2d')!;
-  
-  const gradient = ctx.createRadialGradient(256, 256, 0, 256, 256, 256);
-  gradient.addColorStop(0, '#ffffff');
-  gradient.addColorStop(0.5, '#d0d0d0');
-  gradient.addColorStop(1, '#a0a0a0');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 512, 512);
-  
-  for (let i = 0; i < 50; i++) {
-    const x = Math.random() * 512;
-    const y = Math.random() * 512;
-    const radius = Math.random() * 30 + 5;
-    
-    const craterGradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    craterGradient.addColorStop(0, '#808080');
-    craterGradient.addColorStop(0.5, '#909090');
-    craterGradient.addColorStop(1, '#b0b0b0');
-    
-    ctx.fillStyle = craterGradient;
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  
-  const imageData = ctx.getImageData(0, 0, 512, 512);
-  for (let i = 0; i < imageData.data.length; i += 4) {
-    const noise = Math.random() * 20 - 10;
-    imageData.data[i] += noise;
-    imageData.data[i + 1] += noise;
-    imageData.data[i + 2] += noise;
-  }
-  ctx.putImageData(imageData, 0, 0);
-  
-  return new THREE.CanvasTexture(canvas);
-}
 
 interface ModelProps {
   targetScale: number;
   onScaleChange: (scale: number) => void;
 }
 
-// Componente que carga el modelo 3D
+// 🔥 Componente que carga tu modelo 3D personalizado
 function Model3D({ targetScale, onScaleChange }: ModelProps) {
   const meshRef = useRef<THREE.Group>(null);
   const [currentScale, setCurrentScale] = useState(0.01);
   
-  // 🔥 IMPORTANTE: Coloca tu modelo .glb o .gltf en la carpeta public/models/
-  // Por ejemplo: public/models/mi_modelo.glb
-  // Luego descomenta las siguientes líneas y comenta la sección de la luna:
-  
-  /*
-  // Para cargar tu modelo 3D (.glb o .gltf):
-  const gltf = useLoader(GLTFLoader, '/models/mi_modelo.glb');
+  // 🔥 CARGA TU MODELO 3D AQUÍ:
+  // Coloca tu archivo .glb o .gltf en: public/models/mi_modelo.glb
+  // Luego cambia la ruta abajo:
+  const gltf = useGLTF('/models/mi_modelo.glb');
   
   useEffect(() => {
     if (gltf && meshRef.current) {
-      // Ajusta el tamaño inicial del modelo si es necesario
-      meshRef.current.scale.set(0.01, 0.01, 0.01);
-      
-      // Centra el modelo
+      // Centra el modelo automáticamente
       const box = new THREE.Box3().setFromObject(gltf.scene);
       const center = box.getCenter(new THREE.Vector3());
       gltf.scene.position.sub(center);
@@ -79,21 +30,18 @@ function Model3D({ targetScale, onScaleChange }: ModelProps) {
         if ((child as THREE.Mesh).isMesh) {
           const mesh = child as THREE.Mesh;
           if (mesh.material) {
-            // Si tu modelo no tiene materiales adecuados, puedes reemplazarlos:
-            // mesh.material = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+            // Los materiales ya deberían tener iluminación
+            // Si tu modelo se ve muy oscuro, puedes aumentar la emisión:
+            // (mesh.material as THREE.MeshStandardMaterial).emissive = new THREE.Color(0x222222);
           }
         }
       });
     }
   }, [gltf]);
-  */
-
-  // 🌙 LUNA PROCEDURAL (puedes eliminar esto cuando cargues tu modelo)
-  const moonTexture = createMoonTexture();
   
   useFrame(() => {
     if (meshRef.current) {
-      // Suavizar el crecimiento
+      // Suavizar el crecimiento/zoom
       setCurrentScale((prev) => {
         const newScale = prev + (targetScale - prev) * 0.05;
         onScaleChange(newScale);
@@ -108,18 +56,8 @@ function Model3D({ targetScale, onScaleChange }: ModelProps) {
 
   return (
     <group ref={meshRef}>
-      {/* 🌙 LUNA - Comenta esto cuando uses tu modelo 3D */}
-      <mesh>
-        <sphereGeometry args={[1, 64, 64]} />
-        <meshStandardMaterial 
-          map={moonTexture} 
-          roughness={1} 
-          metalness={0}
-        />
-      </mesh>
-      
-      {/* 🔥 TU MODELO 3D - Descomenta cuando lo cargues */}
-      {/* <primitive object={gltf.scene} /> */}
+      {/* 🔥 TU MODELO 3D se carga aquí */}
+      <primitive object={gltf.scene} />
     </group>
   );
 }
